@@ -129,7 +129,7 @@ func TestPutGet(t *testing.T) {
 }
 
 func TestPutRepeats(t *testing.T) {
-	l := NewLE(IntLE)
+	l := NewRepeated(IntLess)
 
 	l.Put(4)
 	l.Put(4)
@@ -249,6 +249,56 @@ func TestRandom(t *testing.T) {
 	}
 }
 
+func TestRandomRepeated(t *testing.T) {
+	const M = 10000
+	l := NewRepeated(IntGreater)
+
+	add := make(map[int]int)
+	del := make(map[int]int)
+
+	for i := 0; i < M; i++ {
+		v := rand.Intn(M)
+		add[v]++
+		l.Put(v)
+	}
+	if l.Len() != M {
+		t.Errorf("Len expected %d, have %d", len(add), l.Len())
+	}
+	for i := 0; i < M*6/10; i++ {
+		v := rand.Intn(M)
+		del[v]++
+		l.Del(v)
+	}
+
+	if M < 50 {
+		t.Logf("add: %v", add)
+		t.Logf("del: %v", del)
+		t.Logf("list:\n%v", l)
+	}
+
+	diff := M
+	for v, cnt := range add {
+		d := del[v]
+		if cnt < d {
+			d = cnt
+		}
+		cnt -= d
+		diff -= d
+		if cnt == 0 {
+			if el := l.Get(v); el != nil {
+				t.Errorf("want %v, have %v", nil, el)
+			}
+		} else {
+			if el := l.Get(v); el == nil || el.Value() == nil || el.Value().(int) != v {
+				t.Errorf("want %d, have %v", v, el)
+			}
+		}
+	}
+	if l.Len() != diff {
+		t.Errorf("Len expected %d, have %d", diff, l.Len())
+	}
+}
+
 func BenchmarkAddNewLess(b *testing.B) {
 	b.ReportAllocs()
 
@@ -291,10 +341,10 @@ func BenchmarkGet(b *testing.B) {
 	}
 }
 
-func BenchmarkAddNewLE(b *testing.B) {
+func BenchmarkAddNewRepeated(b *testing.B) {
 	b.ReportAllocs()
 
-	l := New(IntLE)
+	l := NewRepeated(IntLess)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)

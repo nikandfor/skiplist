@@ -16,11 +16,11 @@ var (
 type (
 	LessFunc func(a, b interface{} /* val */) bool
 	List     struct {
-		less LessFunc
-		eq   LessFunc
-		len  int
-		zero el
-		up   []**el
+		less   LessFunc
+		repeat bool
+		len    int
+		zero   el
+		up     []**el
 	}
 	el struct {
 		val  interface{} /* val */
@@ -39,11 +39,9 @@ func New(less LessFunc) *List {
 		up:   make([]**el, MaxHeight),
 	}
 }
-func NewLE(less LessFunc) *List {
+func NewRepeated(less LessFunc) *List {
 	l := New(less)
-	l.eq = func(a, b interface{} /* val */) bool {
-		return less(b, a)
-	}
+	l.repeat = true
 	return l
 }
 
@@ -68,10 +66,14 @@ loop:
 			if next == nil {
 				continue
 			}
-			if !l.less(v, next.val) {
+			if l.less(next.val, v) {
 				cur = next
 				continue loop
 			}
+		}
+		next := cur.Next()
+		if next != nil && !l.less(v, cur.Next().val) {
+			cur = cur.Next()
 		}
 		// there is no next element less than v
 		if cur == &l.zero || l.less(cur.val, v) {
@@ -116,7 +118,7 @@ loop:
 		}
 		// there is no next element less than v
 		var add bool
-		if cur == &l.zero || l.less(cur.val, v) {
+		if cur == &l.zero || l.less(cur.val, v) || l.repeat {
 			h := cur.height()
 			for i := 0; i < h; i++ {
 				l.up[i] = cur.nextiaddr(i)
@@ -150,7 +152,7 @@ loop:
 			if next == nil {
 				continue
 			}
-			if l.less(next.val, v) && (l.eq == nil || !l.eq(next.val, v)) {
+			if l.less(next.val, v) {
 				h := cur.height()
 				for i := 0; i < h; i++ {
 					l.up[i] = cur.nextiaddr(i)
@@ -168,7 +170,7 @@ loop:
 		prev := cur
 		cur = cur.Next()
 		// there is no next element less than v
-		if cur == nil || l.less(v, cur.val) && (l.eq == nil || !l.eq(v, cur.val)) {
+		if cur == nil || l.less(v, cur.val) {
 			// didn't have
 			return false
 		}
@@ -184,6 +186,7 @@ loop:
 		for i := 0; i < h; i++ {
 			*l.up[i] = cur.nexti(i)
 		}
+
 		cur.more = nil
 		pool.Put(cur)
 		return true

@@ -11,7 +11,7 @@ func init() {
 }
 
 func TestPutGet(t *testing.T) {
-	l := New(IntLess)
+	l := New(IntAsc)
 
 	t.Logf("init:\n%v", l)
 
@@ -132,8 +132,7 @@ func TestHeight(t *testing.T) {
 func BenchmarkAddNew(b *testing.B) {
 	b.ReportAllocs()
 
-	//	l := New(func(a, b interface{}) bool { return rand.Int()%2 == 0 })
-	l := New(IntLess)
+	l := New(IntAsc)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)
@@ -143,7 +142,7 @@ func BenchmarkAddNew(b *testing.B) {
 func BenchmarkAddDouble(b *testing.B) {
 	b.ReportAllocs()
 
-	l := New(IntLess)
+	l := New(IntAsc)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)

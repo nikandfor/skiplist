@@ -27,12 +27,6 @@ type (
 	}
 )
 
-var (
-	IntLess LessFunc = func(a, b interface{}) bool {
-		return a.(int) < b.(int)
-	}
-)
-
 func New(less LessFunc) *List {
 	return &List{
 		less: less,
@@ -229,8 +223,6 @@ func (e *el) String() string {
 		n := e.nexti(i)
 		if n == nil {
 			_, _ = fmt.Fprintf(&buf, "  nil ")
-		} else if n.val == nil {
-			_, _ = fmt.Fprintf(&buf, "  vnil")
 		} else {
 			_, _ = fmt.Fprintf(&buf, "  %-4v", n.val)
 		}

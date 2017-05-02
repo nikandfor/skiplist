@@ -252,6 +252,7 @@ func TestRandom(t *testing.T) {
 func TestRandomRepeated(t *testing.T) {
 	const M = 10000
 	l := NewRepeated(IntGreater)
+	l2 := NewRepeated(IntGreater)
 
 	add := make(map[int]int)
 	del := make(map[int]int)
@@ -260,23 +261,30 @@ func TestRandomRepeated(t *testing.T) {
 		v := rand.Intn(M)
 		add[v]++
 		l.Put(v)
+		l2.GetOrPut(v)
 	}
 	if l.Len() != M {
-		t.Errorf("Len expected %d, have %d", len(add), l.Len())
+		t.Errorf("l.Len expected %d, have %d", M, l.Len())
+	}
+	if l2.Len() != len(add) {
+		t.Errorf("l2.Len expected %d, have %d", len(add), l2.Len())
 	}
 	for i := 0; i < M*6/10; i++ {
 		v := rand.Intn(M)
 		del[v]++
 		l.Del(v)
+		l2.Del(v)
 	}
 
 	if M < 50 {
 		t.Logf("add: %v", add)
 		t.Logf("del: %v", del)
 		t.Logf("list:\n%v", l)
+		t.Logf("list2:\n%v", l2)
 	}
 
 	diff := M
+	diff2 := len(add)
 	for v, cnt := range add {
 		d := del[v]
 		if cnt < d {
@@ -284,6 +292,10 @@ func TestRandomRepeated(t *testing.T) {
 		}
 		cnt -= d
 		diff -= d
+		if d > 0 {
+			diff2--
+		}
+
 		if cnt == 0 {
 			if el := l.Get(v); el != nil {
 				t.Errorf("want %v, have %v", nil, el)
@@ -293,9 +305,51 @@ func TestRandomRepeated(t *testing.T) {
 				t.Errorf("want %d, have %v", v, el)
 			}
 		}
+		if d > 0 {
+			if el := l2.Get(v); el != nil {
+				t.Errorf("want %v, have %v", nil, el)
+			}
+		} else {
+			if el := l2.Get(v); el == nil || el.Value() == nil || el.Value().(int) != v {
+				t.Errorf("want %d, have %v", v, el)
+			}
+		}
 	}
 	if l.Len() != diff {
 		t.Errorf("Len expected %d, have %d", diff, l.Len())
+	}
+	if l2.Len() != diff2 {
+		t.Errorf("Len expected %d, have %d", diff2, l2.Len())
+	}
+}
+
+func TestGetOrPut(t *testing.T) {
+	l := NewRepeated(IntGreater)
+
+	p1, _ := l.Put(5)
+	p2, _ := l.Put(5)
+	p3, _ := l.Put(5)
+
+	if p1 == p2 || p1 == p3 {
+		t.Errorf("wanted repeats, not the same: %p %p %p", p1, p2, p3)
+	}
+
+	if l.Len() != 3 {
+		t.Errorf("expected 3 elements, have %v", l.Len())
+	}
+
+	g1 := l.Get(5)
+	if g1 != p1 {
+		t.Errorf("got %p %v, want %p %v", g1, g1, p1, p1)
+	}
+
+	gp1, ok := l.GetOrPut(5)
+	if ok || gp1 != p1 {
+		t.Errorf("got %p %v, want %p %v", gp1, gp1, p1, p1)
+	}
+
+	if l.Len() != 3 {
+		t.Errorf("expected 3 elements, have %v", l.Len())
 	}
 }
 

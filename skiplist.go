@@ -7,7 +7,10 @@ import (
 	"sync"
 )
 
-const FixedHeight = 4
+const (
+	FixedHeight = 4
+	FixedLine   = 5
+)
 
 var (
 	MaxHeight = 29
@@ -71,7 +74,6 @@ func (l *List) Get(v interface{} /* val */) *el {
 	el := l.find(v)
 	return el
 }
-
 func (l *List) find(v interface{} /* val */) *el {
 	cur := &l.zero
 loop:
@@ -88,8 +90,8 @@ loop:
 			}
 		}
 		next := cur.Next()
-		if next != nil && !l.less(v, cur.Next().val) {
-			cur = cur.Next()
+		if next != nil && !l.less(v, next.val) {
+			cur = next
 		}
 		// there is no next element less than v
 		if cur == &l.zero || l.less(cur.val, v) {
@@ -138,6 +140,61 @@ loop:
 		// there is no next element less than v
 		var add bool
 		if cur == &l.zero || l.less(cur.val, v) || l.repeat {
+			h := cur.height()
+			for i := 0; i < h; i++ {
+				l.up[i] = cur.nextiaddr(i)
+			}
+
+			// add
+			l.len++
+			add = true
+			cur = l.rndEl()
+			h = cur.height()
+			for i := 0; i < h; i++ {
+				cur.setnexti(i, *l.up[i])
+				*l.up[i] = cur
+			}
+		}
+		return cur, add
+	}
+}
+
+func (l *List) GetOrPut(v interface{} /* val */) (*el, bool) {
+	el, ok := l.findOrPut(v)
+	if ok {
+		el.val = v
+	}
+	return el, ok
+}
+func (l *List) findOrPut(v interface{} /* val */) (*el, bool) {
+	cur := &l.zero
+loop:
+	for {
+		// find greatest element that less than v. if any
+		for i := cur.height() - 1; i >= 0; i-- {
+			next := cur.nexti(i)
+			if next == nil {
+				continue
+			}
+			if l.less(next.val, v) {
+				h := cur.height()
+				for i := next.height(); i < h; i++ {
+					l.up[i] = cur.nextiaddr(i)
+				}
+
+				cur = next
+
+				continue loop
+			}
+		}
+		// there is no next element less than v
+		next := cur.Next()
+		if next != nil && !l.less(v, next.val) {
+			return next, false
+		}
+
+		var add bool
+		if cur == &l.zero || l.less(cur.val, v) {
 			h := cur.height()
 			for i := 0; i < h; i++ {
 				l.up[i] = cur.nextiaddr(i)

@@ -18,6 +18,7 @@ type (
 	List     struct {
 		less LessFunc
 		eq   LessFunc
+		len  int
 		zero el
 		up   []**el
 	}
@@ -48,6 +49,9 @@ func NewLE(less LessFunc) *List {
 
 func (l *List) First() *el {
 	return l.zero.Next()
+}
+func (l *List) Len() int {
+	return l.len
 }
 
 func (l *List) Get(v interface{} /* val */) *el {
@@ -113,13 +117,13 @@ loop:
 		// there is no next element less than v
 		var add bool
 		if cur == &l.zero || l.less(cur.val, v) {
-
 			h := cur.height()
 			for i := 0; i < h; i++ {
 				l.up[i] = cur.nextiaddr(i)
 			}
 
 			// add
+			l.len++
 			add = true
 			cur = l.rndEl()
 			h = cur.height()
@@ -150,27 +154,32 @@ loop:
 				h := cur.height()
 				for i := 0; i < h; i++ {
 					l.up[i] = cur.nextiaddr(i)
-					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
 				}
-
-				//	if !l.less(v, cur.nexti(i).val) {
 
 				h = cur.height()
 				for i := next.height(); i < h; i++ {
 					l.up[i] = cur.nextiaddr(i)
-					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
 				}
 
 				cur = next
 				continue loop
 			}
 		}
+		prev := cur
 		cur = cur.Next()
 		// there is no next element less than v
 		if cur == nil || l.less(v, cur.val) && (l.eq == nil || !l.eq(v, cur.val)) {
 			// didn't have
 			return false
 		}
+
+		l.len--
+
+		h := prev.height()
+		for i := 0; i < h; i++ {
+			l.up[i] = prev.nextiaddr(i)
+		}
+
 		h = cur.height()
 		for i := 0; i < h; i++ {
 			*l.up[i] = cur.nexti(i)

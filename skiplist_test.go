@@ -22,6 +22,10 @@ func TestPutGet(t *testing.T) {
 		}
 	}
 
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
 	t.Logf("filled:\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
@@ -29,6 +33,10 @@ func TestPutGet(t *testing.T) {
 		if add {
 			t.Errorf("added: %v", i)
 		}
+	}
+
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
 	}
 
 	t.Logf("filled by the same\n%v", l)
@@ -81,12 +89,20 @@ func TestPutGet(t *testing.T) {
 
 	t.Logf("del 3\n%v", l)
 
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
 	del = l.Del(3)
 	if del {
 		t.Errorf("%d already deleted, buf %v", 3, del)
 	}
 
 	t.Logf("del 3 again\n%v", l)
+
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
 
 	for _, e := range exp {
 		if e == 3 {
@@ -99,6 +115,10 @@ func TestPutGet(t *testing.T) {
 	}
 
 	t.Logf("del all\n%v", l)
+
+	if l.Len() != 0 {
+		t.Errorf("Len: %v", l.Len())
+	}
 
 	for _, e := range exp {
 		del := l.Del(e)
@@ -183,6 +203,48 @@ func TestHeight(t *testing.T) {
 			t.Errorf("i %2d: %7v (%.2f)  <- out of (%.3v %.3v)", i, v, p, 0.5/D, 0.5*D)
 		} else {
 			t.Logf("i %2d: %7v (%.2f)", i, v, p)
+		}
+	}
+}
+
+func TestRandom(t *testing.T) {
+	l := New(IntLess)
+
+	add := make(map[int]struct{})
+	del := make(map[int]struct{})
+
+	for i := 0; i < 10000; i++ {
+		v := rand.Intn(10000)
+		add[v] = struct{}{}
+		l.Put(v)
+	}
+	if l.Len() != len(add) {
+		t.Errorf("Len expected %d, have %d", len(add), l.Len())
+	}
+	for i := 0; i < 6000; i++ {
+		v := rand.Intn(10000)
+		del[v] = struct{}{}
+		l.Del(v)
+	}
+
+	diff := len(add)
+	for v := range add {
+		if _, ok := del[v]; ok {
+			diff--
+			continue
+		}
+
+		if el := l.Get(v); el == nil || el.Value() == nil || el.Value().(int) != v {
+			t.Errorf("want %d, have %v", v, el)
+		}
+	}
+	if l.Len() != diff {
+		t.Errorf("Len expected %d, have %d", diff, l.Len())
+	}
+
+	for v := range del {
+		if el := l.Get(v); el != nil {
+			t.Errorf("want %v, have %v", nil, el)
 		}
 	}
 }

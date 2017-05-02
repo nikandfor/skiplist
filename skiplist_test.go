@@ -16,9 +16,9 @@ func TestPutGet(t *testing.T) {
 	t.Logf("init:\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
-		add := l.Put(i)
-		if !add {
-			t.Errorf("not added: %v", i)
+		cur, add := l.Put(i)
+		if !add || cur.Value() == nil || cur.Value().(int) != i {
+			t.Errorf("not added: %v %v", i, cur)
 		}
 	}
 
@@ -29,8 +29,8 @@ func TestPutGet(t *testing.T) {
 	t.Logf("filled:\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
-		add := l.Put(i)
-		if add {
+		cur, add := l.Put(i)
+		if add || cur.Value() == nil || cur.Value().(int) != i {
 			t.Errorf("added: %v", i)
 		}
 	}
@@ -82,9 +82,9 @@ func TestPutGet(t *testing.T) {
 		t.Errorf("short list: %d", i)
 	}
 
-	del := l.Del(3)
-	if !del {
-		t.Errorf("%d should be deleted, buf %v", 3, del)
+	cur := l.Del(3)
+	if cur == nil {
+		t.Errorf("%d should be deleted, buf %v", 3, cur)
 	}
 
 	t.Logf("del 3\n%v", l)
@@ -93,9 +93,9 @@ func TestPutGet(t *testing.T) {
 		t.Errorf("Len: %v", l.Len())
 	}
 
-	del = l.Del(3)
-	if del {
-		t.Errorf("%d already deleted, buf %v", 3, del)
+	cur = l.Del(3)
+	if cur != nil {
+		t.Errorf("%d already deleted, buf %v", 3, cur)
 	}
 
 	t.Logf("del 3 again\n%v", l)
@@ -108,9 +108,9 @@ func TestPutGet(t *testing.T) {
 		if e == 3 {
 			continue
 		}
-		del := l.Del(e)
-		if !del {
-			t.Errorf("should be deleted, buf %v", del)
+		cur = l.Del(e)
+		if cur == nil {
+			t.Errorf("should be deleted, buf %v", cur)
 		}
 	}
 
@@ -121,9 +121,9 @@ func TestPutGet(t *testing.T) {
 	}
 
 	for _, e := range exp {
-		del := l.Del(e)
-		if del {
-			t.Errorf("already deleted buf %v", del)
+		cur = l.Del(e)
+		if cur != nil {
+			t.Errorf("already deleted buf %v", cur)
 		}
 	}
 }
@@ -296,6 +296,55 @@ func TestRandomRepeated(t *testing.T) {
 	}
 	if l.Len() != diff {
 		t.Errorf("Len expected %d, have %d", diff, l.Len())
+	}
+}
+
+func TestRepeatedOrder(t *testing.T) {
+	MaxHeight = 4
+	defer func() {
+		MaxHeight = 29
+	}()
+
+	type El struct {
+		k int
+		n int
+	}
+	l := NewRepeated(func(a, b interface{}) bool {
+		return a.(El).k < b.(El).k
+	})
+
+	p1, _ := l.Put(El{k: 4, n: 1})
+	p2, _ := l.Put(El{k: 4, n: 2})
+	p3, _ := l.Put(El{k: 4, n: 3})
+	_, _ = l.Put(El{k: 2, n: 3})
+
+	if p1 == nil || p2 == nil || p3 == nil {
+		t.Errorf("put 1,2,3: %p %p %p", p1, p2, p3)
+	}
+
+	g1 := l.Get(El{k: 4})
+	if g1 == nil || g1.Value() == nil || g1.Value().(El).n != 1 {
+		t.Fatalf("get: %v", g1)
+	}
+
+	d1 := l.Del(El{k: 4})
+	if d1 == nil || d1.Value() == nil || d1.Value().(El).n != 1 {
+		t.Fatalf("del: %v", d1)
+	}
+
+	d2 := l.Del(El{k: 4})
+	if d2 == nil || d2.Value() == nil || d2.Value().(El).n != 2 {
+		t.Fatalf("del: %v", d2)
+	}
+
+	d3 := l.Del(El{k: 4})
+	if d3 == nil || d3.Value() == nil || d3.Value().(El).n != 3 {
+		t.Fatalf("del: %v", d3)
+	}
+
+	f := l.First()
+	if f == nil || f.Value() == nil || f.Value().(El).k != 2 {
+		t.Fatalf("first: %v", g1)
 	}
 }
 

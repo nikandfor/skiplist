@@ -22,5 +22,5 @@ cat >cg/less.go <<EOF
 package skiplist
 
 var IntLess LessFunc = func(a, b $tp) bool { return a < b }
-var IntLE LessFunc = func(a, b $tp) bool { return a <= b }
+var IntGreater LessFunc = func(a, b $tp) bool { return a > b }
 EOF

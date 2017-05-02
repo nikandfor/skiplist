@@ -16,11 +16,12 @@ var (
 type (
 	LessFunc func(a, b interface{} /* val */) bool
 	List     struct {
-		less   LessFunc
-		repeat bool
-		len    int
-		zero   el
-		up     []**el
+		less      LessFunc
+		repeat    bool
+		len       int
+		zero      el
+		up        []**el
+		autoreuse bool
 	}
 	el struct {
 		val  interface{} /* val */
@@ -32,30 +33,45 @@ type (
 
 var pool = sync.Pool{New: func() interface{} { return &el{} }}
 
+// New creates skiplist without repeated elements
 func New(less LessFunc) *List {
 	return &List{
-		less: less,
-		zero: el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
-		up:   make([]**el, MaxHeight),
+		less:      less,
+		zero:      el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
+		up:        make([]**el, MaxHeight),
+		autoreuse: true,
 	}
 }
+
+// NewRepeated creates skiplist with possible repeated elements
 func NewRepeated(less LessFunc) *List {
 	l := New(less)
 	l.repeat = true
 	return l
 }
 
+// First returns first element or nil
 func (l *List) First() *el {
 	return l.zero.Next()
 }
+
+// Len returns length if list
 func (l *List) Len() int {
 	return l.len
 }
 
+// SetAutoReuse enables of disables auto Reuse of deleted elements.
+// It is enabled by default.
+func (l *List) SetAutoReuse(v bool) {
+	l.autoreuse = v
+}
+
+// Get returns first occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
 func (l *List) Get(v interface{} /* val */) *el {
 	el := l.find(v)
 	return el
 }
+
 func (l *List) find(v interface{} /* val */) *el {
 	cur := &l.zero
 loop:
@@ -84,16 +100,19 @@ loop:
 	}
 }
 
-func (l *List) Put(v interface{} /* val */) bool {
+// Put puts new value. If it is list with repititions, than it adds new copy after all equals.
+// Overwise it rewrites (not replaces) existing.
+// It returns positive second argument if there wasn't such element before and vise versa
+func (l *List) Put(v interface{} /* val */) (*el, bool) {
 	el, ok := l.findPut(v)
 	el.val = v
-	return ok
+	return el, ok
 }
-func (l *List) Swap(v interface{} /* val */) (interface{} /* val */, bool) {
+func (l *List) Swap(v interface{} /* val */) (*el, interface{} /* val */, bool) {
 	el, ok := l.findPut(v)
 	old := el.val
 	el.val = v
-	return old, ok
+	return el, old, ok
 }
 func (l *List) findPut(v interface{} /* val */) (*el, bool) {
 	cur := &l.zero
@@ -138,11 +157,12 @@ loop:
 	}
 }
 
-func (l *List) Del(v interface{} /* val */) bool {
-	d := l.findDel(v)
-	return d
+// Del deletes first occurance equals to v and returns it or nil if it wasn't existed
+func (l *List) Del(v interface{} /* val */) *el {
+	el := l.findDel(v)
+	return el
 }
-func (l *List) findDel(v interface{} /* val */) bool {
+func (l *List) findDel(v interface{} /* val */) *el {
 	cur := &l.zero
 loop:
 	for {
@@ -172,7 +192,7 @@ loop:
 		// there is no next element less than v
 		if cur == nil || l.less(v, cur.val) {
 			// didn't have
-			return false
+			return nil
 		}
 
 		l.len--
@@ -187,9 +207,11 @@ loop:
 			*l.up[i] = cur.nexti(i)
 		}
 
-		cur.more = nil
-		pool.Put(cur)
-		return true
+		if l.autoreuse {
+			Reuse(cur)
+		}
+
+		return cur
 	}
 }
 
@@ -267,4 +289,10 @@ func (e *el) String() string {
 		}
 	}
 	return buf.String()
+}
+
+// Put element to buffer for later usage
+func Reuse(cur *el) {
+	cur.more = nil
+	pool.Put(cur)
 }

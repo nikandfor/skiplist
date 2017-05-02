@@ -34,7 +34,6 @@ var pool = sync.Pool{New: func() interface{} { return &el{} }}
 func New(less LessFunc) *List {
 	return &List{
 		less: less,
-		//	eq:   func(a, b interface{} /* val */) bool { return !less(a, b) },
 		zero: el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
 		up:   make([]**el, MaxHeight),
 	}
@@ -70,9 +69,9 @@ loop:
 				continue loop
 			}
 		}
-		//	log.Printf("add after %v", cur)
 		// there is no next element less than v
 		if cur == &l.zero || l.less(cur.val, v) {
+			// no equal elements
 			return nil
 		}
 		return cur
@@ -94,7 +93,6 @@ func (l *List) findPut(v interface{} /* val */) (*el, bool) {
 	cur := &l.zero
 loop:
 	for {
-		//	log.Printf("el: %10p %v", cur, cur)
 		// find greatest element that less than v. if any
 		for i := cur.height() - 1; i >= 0; i-- {
 			next := cur.nexti(i)
@@ -105,7 +103,6 @@ loop:
 				h := cur.height()
 				for i := next.height(); i < h; i++ {
 					l.up[i] = cur.nextiaddr(i)
-					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
 				}
 
 				cur = next
@@ -113,14 +110,13 @@ loop:
 				continue loop
 			}
 		}
-		//	log.Printf("add after %v", cur)
 		// there is no next element less than v
 		var add bool
 		if cur == &l.zero || l.less(cur.val, v) {
+
 			h := cur.height()
 			for i := 0; i < h; i++ {
 				l.up[i] = cur.nextiaddr(i)
-				//	log.Printf("up[%d]: %p", i, cur.nexti(i))
 			}
 
 			// add
@@ -131,7 +127,6 @@ loop:
 				cur.setnexti(i, *l.up[i])
 				*l.up[i] = cur
 			}
-			//	log.Printf("put %5v %v", v, cur)
 		}
 		return cur, add
 	}
@@ -145,12 +140,6 @@ func (l *List) findDel(v interface{} /* val */) bool {
 	cur := &l.zero
 loop:
 	for {
-		//	log.Printf("el: %10p %v", cur, cur)
-		h := cur.height()
-		for i := 0; i < h; i++ {
-			l.up[i] = cur.nextiaddr(i)
-			//	log.Printf("up[%d]: %p", i, cur.nexti(i))
-		}
 		// find greatest element that less than v. if any
 		for i := cur.height() - 1; i >= 0; i-- {
 			next := cur.nexti(i)
@@ -177,10 +166,9 @@ loop:
 			}
 		}
 		cur = cur.Next()
-		//	log.Printf("del after %v (%v)", cur, v)
 		// there is no next element less than v
 		if cur == nil || l.less(v, cur.val) && (l.eq == nil || !l.eq(v, cur.val)) {
-			// add
+			// didn't have
 			return false
 		}
 		h = cur.height()
@@ -196,7 +184,6 @@ loop:
 func (l *List) rndEl() *el {
 	h := l.rndHeight()
 
-	//	e := &el{h: h}
 	e := pool.Get().(*el)
 	e.h = h
 	if h >= FixedHeight {

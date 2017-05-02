@@ -11,7 +11,7 @@ func init() {
 }
 
 func TestPutGet(t *testing.T) {
-	l := New(IntAsc)
+	l := New(IntLess)
 
 	t.Logf("init:\n%v", l)
 
@@ -61,7 +61,11 @@ func TestPutGet(t *testing.T) {
 			break
 		}
 		if i >= len(exp) || e.Value() == nil || exp[i] != e.Value().(int) {
-			t.Errorf("at pos %d: %v, want %v", i, e, exp[i])
+			var e int
+			if i < len(exp) {
+				e = exp[i]
+			}
+			t.Errorf("at pos %d: %v, want %v", i, e, e)
 		}
 		i++
 		prev = e
@@ -104,6 +108,48 @@ func TestPutGet(t *testing.T) {
 	}
 }
 
+func TestPutRepeats(t *testing.T) {
+	l := NewLE(IntLE)
+
+	l.Put(4)
+	l.Put(4)
+
+	l.Put(2)
+	l.Put(2)
+
+	l.Put(4)
+	l.Put(4)
+
+	exp := []int{2, 2, 4, 4, 4, 4}
+	i := 0
+	for e := l.First(); e != nil; e = e.Next() {
+		if exp[i] != e.Value().(int) {
+			t.Errorf("Get: %v want %v", e, exp[i])
+		}
+		i++
+	}
+	if i != len(exp) {
+		t.Errorf("got %v elements, want %v", i, len(exp))
+	}
+
+	t.Logf("filled:\n%v", l)
+
+	l.Del(4)
+	l.Del(4)
+
+	l.Del(2)
+	l.Del(2)
+
+	l.Del(4)
+	l.Del(4)
+
+	t.Logf("del 4:\n%v", l)
+
+	if l.First() != nil {
+		t.Errorf("should be 0 elements")
+	}
+}
+
 func TestHeight(t *testing.T) {
 	l := New(nil)
 	const D = 1.8
@@ -117,6 +163,18 @@ func TestHeight(t *testing.T) {
 	}
 
 	for i, v := range hist {
+		if v == 0 {
+			cont := false
+			for j := i; j < len(hist) && j < i+3; j++ {
+				if hist[j] != 0 {
+					cont = true
+					break
+				}
+			}
+			if !cont {
+				break
+			}
+		}
 		p := 0.5
 		if i != 0 {
 			p = float64(v) / float64(hist[i-1])
@@ -129,10 +187,10 @@ func TestHeight(t *testing.T) {
 	}
 }
 
-func BenchmarkAddNew(b *testing.B) {
+func BenchmarkAddNewLess(b *testing.B) {
 	b.ReportAllocs()
 
-	l := New(IntAsc)
+	l := New(IntLess)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)
@@ -142,7 +200,7 @@ func BenchmarkAddNew(b *testing.B) {
 func BenchmarkAddDouble(b *testing.B) {
 	b.ReportAllocs()
 
-	l := New(IntAsc)
+	l := New(IntLess)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)
@@ -158,7 +216,7 @@ func BenchmarkAddDouble(b *testing.B) {
 func BenchmarkGet(b *testing.B) {
 	b.ReportAllocs()
 
-	l := New(IntAsc)
+	l := New(IntLess)
 
 	for i := 0; i < b.N; i++ {
 		l.Put(i)
@@ -168,5 +226,15 @@ func BenchmarkGet(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_ = l.Get(i)
+	}
+}
+
+func BenchmarkAddNewLE(b *testing.B) {
+	b.ReportAllocs()
+
+	l := New(IntLE)
+
+	for i := 0; i < b.N; i++ {
+		l.Put(i)
 	}
 }

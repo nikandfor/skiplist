@@ -17,6 +17,7 @@ type (
 	LessFunc func(a, b interface{} /* val */) bool
 	List     struct {
 		less LessFunc
+		eq   LessFunc
 		zero el
 		up   []**el
 	}
@@ -33,9 +34,17 @@ var pool = sync.Pool{New: func() interface{} { return &el{} }}
 func New(less LessFunc) *List {
 	return &List{
 		less: less,
+		//	eq:   func(a, b interface{} /* val */) bool { return !less(a, b) },
 		zero: el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
 		up:   make([]**el, MaxHeight),
 	}
+}
+func NewLE(less LessFunc) *List {
+	l := New(less)
+	l.eq = func(a, b interface{} /* val */) bool {
+		return less(b, a)
+	}
+	return l
 }
 
 func (l *List) First() *el {
@@ -52,11 +61,12 @@ loop:
 	for {
 		// find greatest element that less than v. if any
 		for i := cur.height() - 1; i >= 0; i-- {
-			if cur.nexti(i) == nil {
+			next := cur.nexti(i)
+			if next == nil {
 				continue
 			}
-			if !l.less(v, cur.nexti(i).val) {
-				cur = cur.nexti(i)
+			if !l.less(v, next.val) {
+				cur = next
 				continue loop
 			}
 		}
@@ -85,18 +95,21 @@ func (l *List) findPut(v interface{} /* val */) (*el, bool) {
 loop:
 	for {
 		//	log.Printf("el: %10p %v", cur, cur)
-		h := cur.height()
-		for i := 0; i < h; i++ {
-			l.up[i] = cur.nextiaddr(i)
-			//	log.Printf("up[%d]: %p", i, cur.nexti(i))
-		}
 		// find greatest element that less than v. if any
 		for i := cur.height() - 1; i >= 0; i-- {
-			if cur.nexti(i) == nil {
+			next := cur.nexti(i)
+			if next == nil {
 				continue
 			}
-			if !l.less(v, cur.nexti(i).val) {
-				cur = cur.nexti(i)
+			if !l.less(v, next.val) {
+				h := cur.height()
+				for i := next.height(); i < h; i++ {
+					l.up[i] = cur.nextiaddr(i)
+					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
+				}
+
+				cur = next
+
 				continue loop
 			}
 		}
@@ -104,10 +117,16 @@ loop:
 		// there is no next element less than v
 		var add bool
 		if cur == &l.zero || l.less(cur.val, v) {
+			h := cur.height()
+			for i := 0; i < h; i++ {
+				l.up[i] = cur.nextiaddr(i)
+				//	log.Printf("up[%d]: %p", i, cur.nexti(i))
+			}
+
 			// add
 			add = true
 			cur = l.rndEl()
-			h := cur.height()
+			h = cur.height()
 			for i := 0; i < h; i++ {
 				cur.setnexti(i, *l.up[i])
 				*l.up[i] = cur
@@ -134,19 +153,33 @@ loop:
 		}
 		// find greatest element that less than v. if any
 		for i := cur.height() - 1; i >= 0; i-- {
-			if cur.nexti(i) == nil {
+			next := cur.nexti(i)
+			if next == nil {
 				continue
 			}
-			if l.less(cur.nexti(i).val, v) {
+			if l.less(next.val, v) && (l.eq == nil || !l.eq(next.val, v)) {
+				h := cur.height()
+				for i := 0; i < h; i++ {
+					l.up[i] = cur.nextiaddr(i)
+					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
+				}
+
 				//	if !l.less(v, cur.nexti(i).val) {
-				cur = cur.nexti(i)
+
+				h = cur.height()
+				for i := next.height(); i < h; i++ {
+					l.up[i] = cur.nextiaddr(i)
+					//	log.Printf("up[%d]: %p", i, cur.nexti(i))
+				}
+
+				cur = next
 				continue loop
 			}
 		}
 		cur = cur.Next()
 		//	log.Printf("del after %v (%v)", cur, v)
 		// there is no next element less than v
-		if cur == nil || l.less(v, cur.val) {
+		if cur == nil || l.less(v, cur.val) && (l.eq == nil || !l.eq(v, cur.val)) {
 			// add
 			return false
 		}

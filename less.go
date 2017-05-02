@@ -1,40 +1,76 @@
 package skiplist
 
 var (
-	IntAsc LessFunc = func(a, b interface{}) bool {
+	IntLess LessFunc = func(a, b interface{}) bool {
 		return a.(int) < b.(int)
 	}
-	IntDesc LessFunc = func(a, b interface{}) bool {
+	IntGreater LessFunc = func(a, b interface{}) bool {
 		return a.(int) > b.(int)
 	}
-	Int64Asc LessFunc = func(a, b interface{}) bool {
+	IntLE LessFunc = func(a, b interface{}) bool {
+		return a.(int) <= b.(int)
+	}
+	IntGE LessFunc = func(a, b interface{}) bool {
+		return a.(int) >= b.(int)
+	}
+	Int64Less LessFunc = func(a, b interface{}) bool {
 		return a.(int64) < b.(int64)
 	}
-	Int64Desc LessFunc = func(a, b interface{}) bool {
+	Int64Greater LessFunc = func(a, b interface{}) bool {
 		return a.(int64) > b.(int64)
 	}
-	Uint64Asc LessFunc = func(a, b interface{}) bool {
+	Uint64Less LessFunc = func(a, b interface{}) bool {
 		return a.(uint64) < b.(uint64)
 	}
-	Uint64Desc LessFunc = func(a, b interface{}) bool {
+	Uint64Greater LessFunc = func(a, b interface{}) bool {
 		return a.(uint64) > b.(uint64)
 	}
-	Int32Asc LessFunc = func(a, b interface{}) bool {
+	Int64LE LessFunc = func(a, b interface{}) bool {
+		return a.(int64) <= b.(int64)
+	}
+	Int64GE LessFunc = func(a, b interface{}) bool {
+		return a.(int64) >= b.(int64)
+	}
+	Uint64LE LessFunc = func(a, b interface{}) bool {
+		return a.(uint64) <= b.(uint64)
+	}
+	Uint64GE LessFunc = func(a, b interface{}) bool {
+		return a.(uint64) >= b.(uint64)
+	}
+	Int32Less LessFunc = func(a, b interface{}) bool {
 		return a.(int32) < b.(int32)
 	}
-	Int32Desc LessFunc = func(a, b interface{}) bool {
+	Int32Greater LessFunc = func(a, b interface{}) bool {
 		return a.(int32) > b.(int32)
 	}
-	Uint32Asc LessFunc = func(a, b interface{}) bool {
+	Uint32Less LessFunc = func(a, b interface{}) bool {
 		return a.(uint32) < b.(uint32)
 	}
-	Uint32Desc LessFunc = func(a, b interface{}) bool {
+	Uint32Greater LessFunc = func(a, b interface{}) bool {
 		return a.(uint32) > b.(uint32)
 	}
-	StringAsc LessFunc = func(a, b interface{}) bool {
+	Int32LE LessFunc = func(a, b interface{}) bool {
+		return a.(int32) <= b.(int32)
+	}
+	Int32GE LessFunc = func(a, b interface{}) bool {
+		return a.(int32) >= b.(int32)
+	}
+	Uint32LE LessFunc = func(a, b interface{}) bool {
+		return a.(uint32) <= b.(uint32)
+	}
+	Uint32GE LessFunc = func(a, b interface{}) bool {
+		return a.(uint32) >= b.(uint32)
+	}
+	StringLess LessFunc = func(a, b interface{}) bool {
 		return a.(string) < b.(string)
 	}
-	StringDesc LessFunc = func(a, b interface{}) bool {
+	StringGreater LessFunc = func(a, b interface{}) bool {
 		return a.(string) > b.(string)
+	}
+	StringLE LessFunc = func(a, b interface{}) bool {
+		return a.(string) <= b.(string)
+	}
+	StringGE LessFunc = func(a, b interface{}) bool {
+		return a.(string) >= b.(string)
 	}
 )

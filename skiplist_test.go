@@ -13,7 +13,7 @@ func init() {
 func TestPutGet(t *testing.T) {
 	l := New(IntLess)
 
-	t.Logf("\n%v", l)
+	t.Logf("init:\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
 		add := l.Put(i)
@@ -22,7 +22,7 @@ func TestPutGet(t *testing.T) {
 		}
 	}
 
-	t.Logf("\n%v", l)
+	t.Logf("filled:\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
 		add := l.Put(i)
@@ -31,12 +31,17 @@ func TestPutGet(t *testing.T) {
 		}
 	}
 
-	t.Logf("\n%v", l)
+	t.Logf("filled by the same\n%v", l)
 
 	for _, i := range []int{1, 5, 9, 3, 7, 0} {
 		el := l.Get(i)
+		if el == nil {
+			t.Errorf("Get: %v want %v", el, i)
+			continue
+		}
 		if val, ok := el.Value().(int); !ok || val != i {
 			t.Errorf("Get: %v want %v", el, i)
+			continue
 		}
 	}
 
@@ -63,6 +68,39 @@ func TestPutGet(t *testing.T) {
 	}
 	if i < len(exp) {
 		t.Errorf("short list: %d", i)
+	}
+
+	del := l.Del(3)
+	if !del {
+		t.Errorf("%d should be deleted, buf %v", 3, del)
+	}
+
+	t.Logf("del 3\n%v", l)
+
+	del = l.Del(3)
+	if del {
+		t.Errorf("%d already deleted, buf %v", 3, del)
+	}
+
+	t.Logf("del 3 again\n%v", l)
+
+	for _, e := range exp {
+		if e == 3 {
+			continue
+		}
+		del := l.Del(e)
+		if !del {
+			t.Errorf("should be deleted, buf %v", del)
+		}
+	}
+
+	t.Logf("del all\n%v", l)
+
+	for _, e := range exp {
+		del := l.Del(e)
+		if del {
+			t.Errorf("already deleted buf %v", del)
+		}
 	}
 }
 

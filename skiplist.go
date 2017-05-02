@@ -6,8 +6,10 @@ import (
 	"math/rand"
 )
 
+const FixedHeight = 4
+
 var (
-	MaxHeight = 30
+	MaxHeight = 29
 )
 
 type (
@@ -19,6 +21,8 @@ type (
 	}
 	el struct {
 		val  interface{}
+		h    int
+		next [FixedHeight]*el
 		more []*el
 	}
 )
@@ -32,7 +36,7 @@ var (
 func New(less LessFunc) *List {
 	return &List{
 		less: less,
-		zero: el{more: make([]*el, MaxHeight)},
+		zero: el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
 		up:   make([]**el, MaxHeight),
 	}
 }
@@ -117,11 +121,52 @@ loop:
 	}
 }
 
+func (l *List) Del(v interface{}) bool {
+	d := l.findDel(v)
+	return d
+}
+func (l *List) findDel(v interface{}) bool {
+	cur := &l.zero
+loop:
+	for {
+		//	log.Printf("el: %10p %v", cur, cur)
+		h := cur.height()
+		for i := 0; i < h; i++ {
+			l.up[i] = cur.nextiaddr(i)
+			//	log.Printf("up[%d]: %p", i, cur.nexti(i))
+		}
+		// find greatest element that less than v. if any
+		for i := cur.height() - 1; i >= 0; i-- {
+			if cur.nexti(i) == nil {
+				continue
+			}
+			if l.less(cur.nexti(i).val, v) {
+				//	if !l.less(v, cur.nexti(i).val) {
+				cur = cur.nexti(i)
+				continue loop
+			}
+		}
+		cur = cur.Next()
+		//	log.Printf("del after %v (%v)", cur, v)
+		// there is no next element less than v
+		if cur == nil || l.less(v, cur.val) {
+			// add
+			return false
+		}
+		h = cur.height()
+		for i := 0; i < h; i++ {
+			*l.up[i] = cur.nexti(i)
+		}
+		return true
+	}
+}
+
 func (l *List) rndEl() *el {
 	h := l.rndHeight()
 
-	e := &el{
-		more: make([]*el, h),
+	e := &el{h: h}
+	if h >= FixedHeight {
+		e.more = make([]*el, h-FixedHeight)
 	}
 	return e
 }
@@ -139,22 +184,34 @@ func (e *el) Value() interface{} {
 	return e.val
 }
 func (e *el) Next() *el {
-	if len(e.more) == 0 {
+	if e.h == 0 {
 		return nil
 	}
-	return e.more[0]
+	return e.next[0]
 }
 func (e *el) nexti(i int) *el {
-	return e.more[i]
+	if i < FixedHeight {
+		return e.next[i]
+	} else {
+		return e.more[i-FixedHeight]
+	}
 }
 func (e *el) setnexti(i int, v *el) {
-	e.more[i] = v
+	if i < FixedHeight {
+		e.next[i] = v
+	} else {
+		e.more[i-FixedHeight] = v
+	}
 }
 func (e *el) nextiaddr(i int) **el {
-	return &e.more[i]
+	if i < FixedHeight {
+		return &e.next[i]
+	} else {
+		return &e.more[i-FixedHeight]
+	}
 }
 func (e *el) height() int {
-	return len(e.more)
+	return e.h
 }
 
 func (l *List) String() string {

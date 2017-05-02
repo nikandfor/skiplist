@@ -154,3 +154,19 @@ func BenchmarkAddDouble(b *testing.B) {
 		l.Put(b.N + i)
 	}
 }
+
+func BenchmarkGet(b *testing.B) {
+	b.ReportAllocs()
+
+	l := New(IntAsc)
+
+	for i := 0; i < b.N; i++ {
+		l.Put(i)
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = l.Get(i)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"sync"
 )
 
 const FixedHeight = 4
@@ -13,19 +14,21 @@ var (
 )
 
 type (
-	LessFunc func(a, b interface{}) bool
+	LessFunc func(a, b interface{} /* val */) bool
 	List     struct {
 		less LessFunc
 		zero el
 		up   []**el
 	}
 	el struct {
-		val  interface{}
+		val  interface{} /* val */
 		h    int
 		next [FixedHeight]*el
 		more []*el
 	}
 )
+
+var pool = sync.Pool{New: func() interface{} { return &el{} }}
 
 func New(less LessFunc) *List {
 	return &List{
@@ -39,11 +42,11 @@ func (l *List) First() *el {
 	return l.zero.Next()
 }
 
-func (l *List) Get(v interface{}) *el {
+func (l *List) Get(v interface{} /* val */) *el {
 	el := l.find(v)
 	return el
 }
-func (l *List) find(v interface{}) *el {
+func (l *List) find(v interface{} /* val */) *el {
 	cur := &l.zero
 loop:
 	for {
@@ -66,18 +69,18 @@ loop:
 	}
 }
 
-func (l *List) Put(v interface{}) bool {
+func (l *List) Put(v interface{} /* val */) bool {
 	el, ok := l.findPut(v)
 	el.val = v
 	return ok
 }
-func (l *List) Swap(v interface{}) (interface{}, bool) {
+func (l *List) Swap(v interface{} /* val */) (interface{} /* val */, bool) {
 	el, ok := l.findPut(v)
 	old := el.val
 	el.val = v
 	return old, ok
 }
-func (l *List) findPut(v interface{}) (*el, bool) {
+func (l *List) findPut(v interface{} /* val */) (*el, bool) {
 	cur := &l.zero
 loop:
 	for {
@@ -115,11 +118,11 @@ loop:
 	}
 }
 
-func (l *List) Del(v interface{}) bool {
+func (l *List) Del(v interface{} /* val */) bool {
 	d := l.findDel(v)
 	return d
 }
-func (l *List) findDel(v interface{}) bool {
+func (l *List) findDel(v interface{} /* val */) bool {
 	cur := &l.zero
 loop:
 	for {
@@ -151,6 +154,8 @@ loop:
 		for i := 0; i < h; i++ {
 			*l.up[i] = cur.nexti(i)
 		}
+		cur.more = nil
+		pool.Put(cur)
 		return true
 	}
 }
@@ -158,7 +163,9 @@ loop:
 func (l *List) rndEl() *el {
 	h := l.rndHeight()
 
-	e := &el{h: h}
+	//	e := &el{h: h}
+	e := pool.Get().(*el)
+	e.h = h
 	if h >= FixedHeight {
 		e.more = make([]*el, h-FixedHeight)
 	}
@@ -174,7 +181,7 @@ func (l *List) rndHeight() int {
 	return h
 }
 
-func (e *el) Value() interface{} {
+func (e *el) Value() interface{} /* val */ {
 	return e.val
 }
 func (e *el) Next() *el {

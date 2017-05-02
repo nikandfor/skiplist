@@ -208,21 +208,22 @@ func TestHeight(t *testing.T) {
 }
 
 func TestRandom(t *testing.T) {
+	const M = 10000
 	l := New(IntLess)
 
 	add := make(map[int]struct{})
 	del := make(map[int]struct{})
 
-	for i := 0; i < 10000; i++ {
-		v := rand.Intn(10000)
+	for i := 0; i < M; i++ {
+		v := rand.Intn(M)
 		add[v] = struct{}{}
 		l.Put(v)
 	}
 	if l.Len() != len(add) {
 		t.Errorf("Len expected %d, have %d", len(add), l.Len())
 	}
-	for i := 0; i < 6000; i++ {
-		v := rand.Intn(10000)
+	for i := 0; i < M*6/10; i++ {
+		v := rand.Intn(M)
 		del[v] = struct{}{}
 		l.Del(v)
 	}

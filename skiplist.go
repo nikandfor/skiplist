@@ -71,194 +71,119 @@ func (l *List) SetAutoReuse(v bool) {
 
 // Get returns first occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
 func (l *List) Get(v interface{} /* val */) *el {
-	el := l.find(v)
+	el, _ := l.find(v, true, false, false, false)
+	//	el := l.find(v)
 	return el
 }
-func (l *List) find(v interface{} /* val */) *el {
-	cur := &l.zero
-loop:
-	for {
-		// find greatest element that less than v. if any
-		for i := cur.height() - 1; i >= 0; i-- {
-			next := cur.nexti(i)
-			if next == nil {
-				continue
-			}
-			if l.less(next.val, v) {
-				cur = next
-				continue loop
-			}
-		}
-		next := cur.Next()
-		if next != nil && !l.less(v, next.val) {
-			cur = next
-		}
-		// there is no next element less than v
-		if cur == &l.zero || l.less(cur.val, v) {
-			// no equal elements
-			return nil
-		}
-		return cur
-	}
+
+// Get returns last occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
+func (l *List) GetLast(v interface{} /* val */) *el {
+	el, _ := l.find(v, false, false, false, false)
+	//	el := l.find(v)
+	return el
 }
 
 // Put puts new value. If it is list with repititions, than it adds new copy after all equals.
 // Overwise it rewrites (not replaces) existing.
-// It returns positive second argument if there wasn't such element before and vise versa
+// Second returned argument is true if there wasn't such element.
 func (l *List) Put(v interface{} /* val */) (*el, bool) {
-	el, ok := l.findPut(v)
+	el, had := l.find(v, false, true, l.repeat, false)
 	el.val = v
-	return el, ok
+	return el, !had
 }
-func (l *List) Swap(v interface{} /* val */) (*el, interface{} /* val */, bool) {
-	el, ok := l.findPut(v)
-	old := el.val
+
+// Put puts new value. If it is list with repititions, than it adds new copy before all equals.
+// Overwise it rewrites (not replaces) existing.
+// Second returned argument is true if there wasn't such element.
+func (l *List) PutFront(v interface{} /* val */) (*el, bool) {
+	el, had := l.find(v, true, true, l.repeat, false)
 	el.val = v
-	return el, old, ok
-}
-func (l *List) findPut(v interface{} /* val */) (*el, bool) {
-	cur := &l.zero
-loop:
-	for {
-		// find greatest element that less than v. if any
-		for i := cur.height() - 1; i >= 0; i-- {
-			next := cur.nexti(i)
-			if next == nil {
-				continue
-			}
-			if !l.less(v, next.val) {
-				h := cur.height()
-				for i := next.height(); i < h; i++ {
-					l.up[i] = cur.nextiaddr(i)
-				}
-
-				cur = next
-
-				continue loop
-			}
-		}
-		// there is no next element less than v
-		var add bool
-		if cur == &l.zero || l.less(cur.val, v) || l.repeat {
-			h := cur.height()
-			for i := 0; i < h; i++ {
-				l.up[i] = cur.nextiaddr(i)
-			}
-
-			// add
-			l.len++
-			add = true
-			cur = l.rndEl()
-			h = cur.height()
-			for i := 0; i < h; i++ {
-				cur.setnexti(i, *l.up[i])
-				*l.up[i] = cur
-			}
-		}
-		return cur, add
-	}
+	return el, !had
 }
 
+// GetOrPut gets first occurance or add new and returns it.
+// Second returned argument is true if there wasn't such element.
 func (l *List) GetOrPut(v interface{} /* val */) (*el, bool) {
-	el, ok := l.findOrPut(v)
-	if ok {
+	el, had := l.find(v, true, true, false, false)
+	el.val = v
+	if !had {
 		el.val = v
 	}
-	return el, ok
-}
-func (l *List) findOrPut(v interface{} /* val */) (*el, bool) {
-	cur := &l.zero
-loop:
-	for {
-		// find greatest element that less than v. if any
-		for i := cur.height() - 1; i >= 0; i-- {
-			next := cur.nexti(i)
-			if next == nil {
-				continue
-			}
-			if l.less(next.val, v) {
-				h := cur.height()
-				for i := next.height(); i < h; i++ {
-					l.up[i] = cur.nextiaddr(i)
-				}
-
-				cur = next
-
-				continue loop
-			}
-		}
-		// there is no next element less than v
-		next := cur.Next()
-		if next != nil && !l.less(v, next.val) {
-			return next, false
-		}
-
-		var add bool
-		if cur == &l.zero || l.less(cur.val, v) {
-			h := cur.height()
-			for i := 0; i < h; i++ {
-				l.up[i] = cur.nextiaddr(i)
-			}
-
-			// add
-			l.len++
-			add = true
-			cur = l.rndEl()
-			h = cur.height()
-			for i := 0; i < h; i++ {
-				cur.setnexti(i, *l.up[i])
-				*l.up[i] = cur
-			}
-		}
-		return cur, add
-	}
+	return el, !had
 }
 
 // Del deletes first occurance equals to v and returns it or nil if it wasn't existed
 func (l *List) Del(v interface{} /* val */) *el {
-	el := l.findDel(v)
+	el, _ := l.find(v, true, false, false, true)
 	return el
 }
-func (l *List) findDel(v interface{} /* val */) *el {
+
+func (l *List) find(v interface{} /* val */, first, add, addm, del bool) (*el, bool) {
 	cur := &l.zero
-loop:
+	calcup := add || del
+
 	for {
-		// find greatest element that less than v. if any
+		var gonext bool
+		var next *el
 		for i := cur.height() - 1; i >= 0; i-- {
-			next := cur.nexti(i)
+			next = cur.nexti(i)
 			if next == nil {
 				continue
 			}
-			if l.less(next.val, v) {
-				h := cur.height()
-				for i := 0; i < h; i++ {
-					l.up[i] = cur.nextiaddr(i)
+			if first {
+				if l.less(next.val, v) {
+					gonext = true
+					break
 				}
-
-				h = cur.height()
-				for i := next.height(); i < h; i++ {
-					l.up[i] = cur.nextiaddr(i)
+			} else {
+				if !l.less(v, next.val) {
+					gonext = true
+					break
 				}
-
-				cur = next
-				continue loop
 			}
 		}
-		prev := cur
-		cur = cur.Next()
-		// there is no next element less than v
-		if cur == nil || l.less(v, cur.val) {
-			// didn't have
-			return nil
+		if !gonext {
+			break
 		}
 
-		l.len--
+		if calcup {
+			h := cur.height()
+			for i := next.height(); i < h; i++ {
+				l.up[i] = cur.nextiaddr(i)
+			}
+		}
+		cur = next
+	}
 
+	prev := cur
+	var had bool
+	if first {
+		next := cur.Next()
+		if next != nil && !l.less(v, next.val) {
+			cur = next
+			had = true
+		}
+	} else if cur != &l.zero && !l.less(cur.val, v) {
+		had = true
+	}
+
+	if had {
+		if !addm && !del {
+			return cur, had
+		}
+	} else {
+		if !add {
+			return nil, had
+		}
+	}
+
+	if del {
 		h := prev.height()
 		for i := 0; i < h; i++ {
 			l.up[i] = prev.nextiaddr(i)
 		}
 
+		l.len--
 		h = cur.height()
 		for i := 0; i < h; i++ {
 			*l.up[i] = cur.nexti(i)
@@ -267,9 +192,23 @@ loop:
 		if l.autoreuse {
 			Reuse(cur)
 		}
+	} else {
+		h := cur.height()
+		for i := 0; i < h; i++ {
+			l.up[i] = cur.nextiaddr(i)
+		}
 
-		return cur
+		// add
+		l.len++
+		cur = l.rndEl()
+		h = cur.height()
+		for i := 0; i < h; i++ {
+			cur.setnexti(i, *l.up[i])
+			*l.up[i] = cur
+		}
 	}
+
+	return cur, had
 }
 
 func (l *List) rndEl() *el {

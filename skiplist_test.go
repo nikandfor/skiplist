@@ -62,7 +62,7 @@ func TestPutGet(t *testing.T) {
 
 	exp := []int{0, 1, 3, 5, 7, 9}
 	i := 0
-	var prev *el
+	var prev *El
 	for e := l.First(); e != nil; e = e.Next() {
 		if e == prev {
 			t.Errorf("got after self: %v", e)

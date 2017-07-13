@@ -22,26 +22,26 @@ type (
 		less      LessFunc
 		repeat    bool
 		len       int
-		zero      el
-		up        []**el
+		zero      El
+		up        []**El
 		autoreuse bool
 	}
-	el struct {
+	El struct {
 		val  interface{} /* val */
 		h    int
-		next [FixedHeight]*el
-		more []*el
+		next [FixedHeight]*El
+		more []*El
 	}
 )
 
-var pool = sync.Pool{New: func() interface{} { return &el{} }}
+var pool = sync.Pool{New: func() interface{} { return &El{} }}
 
 // New creates skiplist without repeated elements
 func New(less LessFunc) *List {
 	return &List{
 		less:      less,
-		zero:      el{h: MaxHeight, more: make([]*el, MaxHeight-FixedHeight)},
-		up:        make([]**el, MaxHeight),
+		zero:      El{h: MaxHeight, more: make([]*El, MaxHeight-FixedHeight)},
+		up:        make([]**El, MaxHeight),
 		autoreuse: true,
 	}
 }
@@ -54,7 +54,7 @@ func NewRepeated(less LessFunc) *List {
 }
 
 // First returns first element or nil
-func (l *List) First() *el {
+func (l *List) First() *El {
 	return l.zero.Next()
 }
 
@@ -70,14 +70,14 @@ func (l *List) SetAutoReuse(v bool) {
 }
 
 // Get returns first occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
-func (l *List) Get(v interface{} /* val */) *el {
+func (l *List) Get(v interface{} /* val */) *El {
 	el, _ := l.find(v, true, false, false, false)
 	//	el := l.find(v)
 	return el
 }
 
 // Get returns last occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
-func (l *List) GetLast(v interface{} /* val */) *el {
+func (l *List) GetLast(v interface{} /* val */) *El {
 	el, _ := l.find(v, false, false, false, false)
 	//	el := l.find(v)
 	return el
@@ -86,7 +86,7 @@ func (l *List) GetLast(v interface{} /* val */) *el {
 // Put puts new value. If it is list with repititions, than it adds new copy after all equals.
 // Overwise it rewrites (not replaces) existing.
 // Second returned argument is true if there wasn't such element.
-func (l *List) Put(v interface{} /* val */) (*el, bool) {
+func (l *List) Put(v interface{} /* val */) (*El, bool) {
 	el, had := l.find(v, false, true, l.repeat, false)
 	el.val = v
 	return el, !had
@@ -95,7 +95,7 @@ func (l *List) Put(v interface{} /* val */) (*el, bool) {
 // Put puts new value. If it is list with repititions, than it adds new copy before all equals.
 // Overwise it rewrites (not replaces) existing.
 // Second returned argument is true if there wasn't such element.
-func (l *List) PutFront(v interface{} /* val */) (*el, bool) {
+func (l *List) PutFront(v interface{} /* val */) (*El, bool) {
 	el, had := l.find(v, true, true, l.repeat, false)
 	el.val = v
 	return el, !had
@@ -103,7 +103,7 @@ func (l *List) PutFront(v interface{} /* val */) (*el, bool) {
 
 // GetOrPut gets first occurance or add new and returns it.
 // Second returned argument is true if there wasn't such element.
-func (l *List) GetOrPut(v interface{} /* val */) (*el, bool) {
+func (l *List) GetOrPut(v interface{} /* val */) (*El, bool) {
 	el, had := l.find(v, true, true, false, false)
 	el.val = v
 	if !had {
@@ -113,18 +113,18 @@ func (l *List) GetOrPut(v interface{} /* val */) (*el, bool) {
 }
 
 // Del deletes first occurance equals to v and returns it or nil if it wasn't existed
-func (l *List) Del(v interface{} /* val */) *el {
+func (l *List) Del(v interface{} /* val */) *El {
 	el, _ := l.find(v, true, false, false, true)
 	return el
 }
 
-func (l *List) find(v interface{} /* val */, first, add, addm, del bool) (*el, bool) {
+func (l *List) find(v interface{} /* val */, first, add, addm, del bool) (*El, bool) {
 	cur := &l.zero
 	calcup := add || del
 
 	for {
 		var gonext bool
-		var next *el
+		var next *El
 		for i := cur.height() - 1; i >= 0; i-- {
 			next = cur.nexti(i)
 			if next == nil {
@@ -211,13 +211,13 @@ func (l *List) find(v interface{} /* val */, first, add, addm, del bool) (*el, b
 	return cur, had
 }
 
-func (l *List) rndEl() *el {
+func (l *List) rndEl() *El {
 	h := l.rndHeight()
 
-	e := pool.Get().(*el)
+	e := pool.Get().(*El)
 	e.h = h
 	if h >= FixedHeight {
-		e.more = make([]*el, h-FixedHeight)
+		e.more = make([]*El, h-FixedHeight)
 	}
 	return e
 }
@@ -231,37 +231,37 @@ func (l *List) rndHeight() int {
 	return h
 }
 
-func (e *el) Value() interface{} /* val */ {
+func (e *El) Value() interface{} /* val */ {
 	return e.val
 }
-func (e *el) Next() *el {
+func (e *El) Next() *El {
 	if e.h == 0 {
 		return nil
 	}
 	return e.next[0]
 }
-func (e *el) nexti(i int) *el {
+func (e *El) nexti(i int) *El {
 	if i < FixedHeight {
 		return e.next[i]
 	} else {
 		return e.more[i-FixedHeight]
 	}
 }
-func (e *el) setnexti(i int, v *el) {
+func (e *El) setnexti(i int, v *El) {
 	if i < FixedHeight {
 		e.next[i] = v
 	} else {
 		e.more[i-FixedHeight] = v
 	}
 }
-func (e *el) nextiaddr(i int) **el {
+func (e *El) nextiaddr(i int) **El {
 	if i < FixedHeight {
 		return &e.next[i]
 	} else {
 		return &e.more[i-FixedHeight]
 	}
 }
-func (e *el) height() int {
+func (e *El) height() int {
 	return e.h
 }
 
@@ -273,7 +273,7 @@ func (l *List) String() string {
 	}
 	return buf.String()
 }
-func (e *el) String() string {
+func (e *El) String() string {
 	var buf bytes.Buffer
 	_, _ = fmt.Fprintf(&buf, "%-10v: (%d)", e.val, e.height())
 	for i := 0; i < e.height(); i++ {
@@ -288,7 +288,7 @@ func (e *el) String() string {
 }
 
 // Put element to buffer for later usage
-func Reuse(cur *el) {
+func Reuse(cur *El) {
 	cur.more = nil
 	pool.Put(cur)
 }

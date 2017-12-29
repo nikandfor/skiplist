@@ -83,7 +83,7 @@ func (l *List) Get(v interface{} /* val */) *El {
 func (l *List) GetLast(v interface{} /* val */) *El {
 	cur := l.search(v, false, false)
 
-	if l.less(cur.val, v) {
+	if cur == &l.zero || l.less(cur.val, v) {
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func (l *List) Put(v interface{} /* val */) (*El, bool) {
 func (l *List) PutBefore(v interface{} /* val */) (*El, bool) {
 	cur := l.search(v, true, true)
 
-	if !l.repeat && cur != nil && !l.less(cur.val, v) {
+	if !l.repeat && cur != nil && !l.less(v, cur.val) {
 		cur.val = v
 		return cur, false
 	}
@@ -153,10 +153,10 @@ func (l *List) Del(v interface{} /* val */) *El {
 }
 
 func (l *List) DelEl(e *El) *El {
-	return l.DelCheck(e.Value(), func(b *El) bool { return e == b })
+	return l.DelIf(e.Value(), func(b *El) bool { return e == b })
 }
 
-func (l *List) DelCheck(v interface{} /* val */, f func(*El) bool) *El {
+func (l *List) DelIf(v interface{} /* val */, f func(*El) bool) *El {
 	cur := l.search(v, true, true)
 
 	for cur != nil && !l.less(v, cur.val) && !f(cur) {
@@ -267,9 +267,6 @@ func (e *El) Value() interface{} /* val */ {
 	return e.val
 }
 func (e *El) Next() *El {
-	if e == nil || e.h == 0 {
-		return nil
-	}
 	return e.next[0]
 }
 func (e *El) nexti(i int) *El {

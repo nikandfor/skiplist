@@ -62,7 +62,7 @@ func TestRepeatedOrder(t *testing.T) {
 	assert.Equal(t, 1, l.Len())
 }
 
-func TestDelEl(t *testing.T) {
+func TestDelIf(t *testing.T) {
 	t.Logf("MaxHeight: %v", MaxHeight)
 
 	type Elt struct {
@@ -73,20 +73,25 @@ func TestDelEl(t *testing.T) {
 		return a.(Elt).k < b.(Elt).k
 	})
 
+	var del *El
 	for i := 0; i < 10; i++ {
-		l.Put(Elt{k: 1, n: i})
+		q, _ := l.Put(Elt{k: 1, n: i})
+		if i == 4 {
+			del = q
+		}
 	}
 
 	t.Logf("\n%v", l)
 
-	l.DelCheck(Elt{k: 1}, func(b *El) bool {
+	l.DelIf(Elt{k: 1}, func(b *El) bool {
 		et := b.Value().(Elt)
 		return et.n == 2
 	})
+	l.DelEl(del)
 
 	i := 0
 	for e := l.First(); e != nil; e = e.Next() {
-		if i == 2 {
+		if i == 2 || i == 4 {
 			i++
 		}
 		assert.Equal(t, i, e.Value().(Elt).n)
@@ -97,7 +102,7 @@ func TestDelEl(t *testing.T) {
 
 	l.Put(Elt{k: 10})
 
-	l.DelCheck(Elt{k: 1}, func(b *El) bool {
+	l.DelIf(Elt{k: 1}, func(b *El) bool {
 		et := b.Value().(Elt)
 		assert.Equal(t, 1, et.k, "stepped over requested element")
 		return et.n == 2

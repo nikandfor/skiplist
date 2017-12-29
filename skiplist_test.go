@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -356,6 +358,284 @@ func TestGetOrPut(t *testing.T) {
 
 	if l.Len() != 3 {
 		t.Errorf("expected 3 elements, have %v", l.Len())
+	}
+}
+
+func TestRepeated(t *testing.T) {
+	const N = 10
+
+	l := NewRepeated(IntGreater)
+
+	p := make([]*El, N)
+	for i := 0; i < N; i++ {
+		p[i], _ = l.PutBefore(1)
+	}
+
+	assert.Equal(t, N, l.Len())
+
+	for i := 0; i < N; i++ {
+		g := l.GetLast(1)
+		if g != p[i] {
+			t.Errorf("got not the last")
+		}
+
+		del := l.DelEl(g)
+		if del != g {
+			t.Errorf("deleted not requested")
+		}
+	}
+
+	assert.Equal(t, 0, l.Len())
+
+	assert.Nil(t, l.GetLast(1))
+
+	assert.Nil(t, l.DelIf(1, func(*El) bool { return true }))
+}
+
+func TestPutBeforeGetLast(t *testing.T) {
+	defer func(v int) {
+		MaxHeight = v
+	}(MaxHeight)
+	MaxHeight = 5
+
+	l := New(IntLess)
+
+	t.Logf("init:\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		cur, add := l.PutBefore(i)
+		if !add || cur.Value() == nil || cur.Value().(int) != i {
+			t.Errorf("not added: %v %v", i, cur)
+		}
+	}
+
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	t.Logf("filled:\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		cur, add := l.PutBefore(i)
+		if add || cur.Value() == nil || cur.Value().(int) != i {
+			t.Errorf("added: %v", i)
+		}
+	}
+
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	t.Logf("filled by the same\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		el := l.GetLast(i)
+		if el == nil {
+			t.Errorf("GetLast: %v want %v", el, i)
+			continue
+		}
+		if val, ok := el.Value().(int); !ok || val != i {
+			t.Errorf("GetLast: %v want %v", el, i)
+			continue
+		}
+	}
+
+	for _, i := range []int{-1, 2, 4, 6, 8, 10, 300} {
+		el := l.GetLast(i)
+		if el != nil {
+			t.Errorf("GetLast: %v want %v", el, nil)
+		}
+	}
+
+	exp := []int{0, 1, 3, 5, 7, 9}
+	i := 0
+	var prev *El
+	for e := l.First(); e != nil; e = e.Next() {
+		if e == prev {
+			t.Errorf("got after self: %v", e)
+			break
+		}
+		if i >= len(exp) || e.Value() == nil || exp[i] != e.Value().(int) {
+			var e int
+			if i < len(exp) {
+				e = exp[i]
+			}
+			t.Errorf("at pos %d: %v, want %v", i, e, e)
+		}
+		i++
+		prev = e
+	}
+	if i < len(exp) {
+		t.Errorf("short list: %d", i)
+	}
+
+	cur := l.Del(3)
+	if cur == nil {
+		t.Errorf("%d should be deleted, buf %v", 3, cur)
+	}
+
+	t.Logf("del 3\n%v", l)
+
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	cur = l.Del(3)
+	if cur != nil {
+		t.Errorf("%d already deleted, buf %v", 3, cur)
+	}
+
+	t.Logf("del 3 again\n%v", l)
+
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	for _, e := range exp {
+		if e == 3 {
+			continue
+		}
+		cur = l.Del(e)
+		if cur == nil {
+			t.Errorf("should be deleted, buf %v", cur)
+		}
+	}
+
+	t.Logf("del all\n%v", l)
+
+	if l.Len() != 0 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	for _, e := range exp {
+		cur = l.Del(e)
+		if cur != nil {
+			t.Errorf("already deleted buf %v", cur)
+		}
+	}
+}
+
+func TestCoverSetAutoReuse(t *testing.T) {
+	defer func(v int) {
+		MaxHeight = v
+	}(MaxHeight)
+	MaxHeight = 5
+
+	l := New(IntLess)
+	l.SetAutoReuse(false)
+
+	t.Logf("init:\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		cur, add := l.Put(i)
+		if !add || cur.Value() == nil || cur.Value().(int) != i {
+			t.Errorf("not added: %v %v", i, cur)
+		}
+	}
+
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	t.Logf("filled:\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		cur, add := l.Put(i)
+		if add || cur.Value() == nil || cur.Value().(int) != i {
+			t.Errorf("added: %v", i)
+		}
+	}
+
+	if l.Len() != 6 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	t.Logf("filled by the same\n%v", l)
+
+	for _, i := range []int{1, 5, 9, 3, 7, 0} {
+		el := l.Get(i)
+		if el == nil {
+			t.Errorf("Get: %v want %v", el, i)
+			continue
+		}
+		if val, ok := el.Value().(int); !ok || val != i {
+			t.Errorf("Get: %v want %v", el, i)
+			continue
+		}
+	}
+
+	for _, i := range []int{-1, 2, 4, 6, 8, 10, 300} {
+		el := l.Get(i)
+		if el != nil {
+			t.Errorf("Get: %v want %v", el, nil)
+		}
+	}
+
+	exp := []int{0, 1, 3, 5, 7, 9}
+	i := 0
+	var prev *El
+	for e := l.First(); e != nil; e = e.Next() {
+		if e == prev {
+			t.Errorf("got after self: %v", e)
+			break
+		}
+		if i >= len(exp) || e.Value() == nil || exp[i] != e.Value().(int) {
+			var e int
+			if i < len(exp) {
+				e = exp[i]
+			}
+			t.Errorf("at pos %d: %v, want %v", i, e, e)
+		}
+		i++
+		prev = e
+	}
+	if i < len(exp) {
+		t.Errorf("short list: %d", i)
+	}
+
+	cur := l.Del(3)
+	if cur == nil {
+		t.Errorf("%d should be deleted, buf %v", 3, cur)
+	}
+
+	t.Logf("del 3\n%v", l)
+
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	cur = l.Del(3)
+	if cur != nil {
+		t.Errorf("%d already deleted, buf %v", 3, cur)
+	}
+
+	t.Logf("del 3 again\n%v", l)
+
+	if l.Len() != 5 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	for _, e := range exp {
+		if e == 3 {
+			continue
+		}
+		cur = l.Del(e)
+		if cur == nil {
+			t.Errorf("should be deleted, buf %v", cur)
+		}
+	}
+
+	t.Logf("del all\n%v", l)
+
+	if l.Len() != 0 {
+		t.Errorf("Len: %v", l.Len())
+	}
+
+	for _, e := range exp {
+		cur = l.Del(e)
+		if cur != nil {
+			t.Errorf("already deleted buf %v", cur)
+		}
 	}
 }
 

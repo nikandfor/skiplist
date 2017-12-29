@@ -11,6 +11,11 @@ func init() {
 }
 
 func TestPutGet(t *testing.T) {
+	defer func(v int) {
+		MaxHeight = v
+	}(MaxHeight)
+	MaxHeight = 5
+
 	l := New(IntLess)
 
 	t.Logf("init:\n%v", l)

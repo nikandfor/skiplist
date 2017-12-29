@@ -1,51 +1,27 @@
 package skiplist
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestCoverLessFuncs(t *testing.T) {
-	var l *List
+	assert.True(t, IntLess(1, 2))
+	assert.True(t, IntGreater(2, 1))
 
-	l = New(IntGreater)
-	l.Put(5)
-	l.Put(3)
+	assert.True(t, Int64Less(int64(1), int64(2)))
+	assert.True(t, Int64Greater(int64(2), int64(1)))
 
-	l = New(Int64Less)
-	l.Put(int64(5))
-	l.Put(int64(3))
+	assert.True(t, Uint64Less(uint64(1), uint64(2)))
+	assert.True(t, Uint64Greater(uint64(2), uint64(1)))
 
-	l = New(Int64Greater)
-	l.Put(int64(5))
-	l.Put(int64(3))
+	assert.True(t, Int32Less(int32(1), int32(2)))
+	assert.True(t, Int32Greater(int32(2), int32(1)))
 
-	l = New(Uint64Less)
-	l.Put(uint64(5))
-	l.Put(uint64(3))
+	assert.True(t, Uint32Less(uint32(1), uint32(2)))
+	assert.True(t, Uint32Greater(uint32(2), uint32(1)))
 
-	l = New(Uint64Greater)
-	l.Put(uint64(5))
-	l.Put(uint64(3))
-
-	l = New(Int32Less)
-	l.Put(int32(5))
-	l.Put(int32(3))
-
-	l = New(Int32Greater)
-	l.Put(int32(5))
-	l.Put(int32(3))
-
-	l = New(Uint32Less)
-	l.Put(uint32(5))
-	l.Put(uint32(3))
-
-	l = New(Uint32Greater)
-	l.Put(uint32(5))
-	l.Put(uint32(3))
-
-	l = New(StringLess)
-	l.Put("5")
-	l.Put("3")
-
-	l = New(StringGreater)
-	l.Put("5")
-	l.Put("3")
+	assert.True(t, StringLess("1", "2"))
+	assert.True(t, StringGreater("2", "1"))
 }

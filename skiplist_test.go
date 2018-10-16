@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -689,4 +690,12 @@ func BenchmarkAddNewRepeated(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		l.Put(i)
 	}
+}
+
+func TestSizeof(t *testing.T) {
+	var l List
+	var el El
+
+	t.Logf("sizeof list: %d", unsafe.Sizeof(l))
+	t.Logf("sizeof element: %d", unsafe.Sizeof(el))
 }

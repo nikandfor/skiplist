@@ -20,10 +20,10 @@ type (
 	List     struct {
 		less      LessFunc
 		repeat    bool
+		autoreuse bool
 		len       int
 		zero      El
 		up        []**El
-		autoreuse bool
 	}
 	El struct {
 		val  interface{} /* val */

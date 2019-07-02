@@ -68,7 +68,7 @@ func (l *List) SetAutoReuse(v bool) {
 	l.autoreuse = v
 }
 
-// Get returns first occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
+// Get returns first occurrence of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
 func (l *List) Get(v interface{} /* val */) *El {
 	cur := l.search(v, true, false)
 
@@ -79,7 +79,7 @@ func (l *List) Get(v interface{} /* val */) *El {
 	return cur
 }
 
-// Get returns last occurance of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
+// Get returns last occurrence of element equal to v (equal defined as !less(e, v) && !less(v, e)) or nil if it doesn't exists.
 func (l *List) GetLast(v interface{} /* val */) *El {
 	cur := l.search(v, false, false)
 
@@ -118,7 +118,7 @@ func (l *List) PutBefore(v interface{} /* val */) (*El, bool) {
 	return l.rndEl(v), true
 }
 
-// GetOrPut gets first occurance or add new and returns it.
+// GetOrPut gets first occurrence or add new and returns it.
 // Second returned argument is true if there wasn't such element.
 func (l *List) GetOrPut(v interface{} /* val */) (*El, bool) {
 	cur := l.search(v, true, true)
@@ -130,7 +130,7 @@ func (l *List) GetOrPut(v interface{} /* val */) (*El, bool) {
 	return l.rndEl(v), true
 }
 
-// Del deletes first occurance equals to v and returns it or nil if it wasn't existed
+// Del deletes first occurrence equals to v and returns it or nil if it wasn't existed
 func (l *List) Del(v interface{} /* val */) *El {
 	cur := l.search(v, true, true)
 

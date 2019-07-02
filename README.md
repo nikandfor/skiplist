@@ -1,3 +1,11 @@
+[![Documentation](https://godoc.org/github.com/nikandfor/skiplist?status.svg)](http://godoc.org/github.com/nikandfor/skiplist)
+[![Build Status](https://travis-ci.com/nikandfor/skiplist.svg?branch=master)](https://travis-ci.com/nikandfor/skiplist)
+[![CircleCI](https://circleci.com/gh/nikandfor/skiplist.svg?style=svg)](https://circleci.com/gh/nikandfor/skiplist)
+[![codecov](https://codecov.io/gh/nikandfor/skiplist/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/skiplist)
+[![GolangCI](https://golangci.com/badges/github.com/nikandfor/skiplist.svg)](https://golangci.com/r/github.com/nikandfor/skiplist)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nikandfor/skiplist)](https://goreportcard.com/report/github.com/nikandfor/skiplist)
+![Project status](https://img.shields.io/badge/status-finished-brightgreen.svg)
+
 # go-skiplist
 fast skiplist on golang
 
@@ -5,7 +13,7 @@ fast skiplist on golang
 * Minimal number of allocs
 * Effective + optimized
 * It can be used with any types and custom Less function
-* Elements can or can not repeats. If elements can repeat, than Get and Del operate on first occurance. Put inserts after all equal elements. (See RepeatedOrder test)
+* Elements can or can not repeat. If elements repeat, than Get and Del operate on first occurance. Put inserts after all equal elements. (See `RepeatedOrder` test)
 * less than 300 LOC on main file
 * There is code generator that replaces `interface{}` to `underlying_type` for even better results
 * There are some ready to use Less functions
